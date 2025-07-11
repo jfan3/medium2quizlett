@@ -1,0 +1,294 @@
+{
+  "rss_sources": {
+    "Causal Inference": {
+      "description": "Statistical methods for inferring causal relationships from data",
+      "sources": [
+        {
+          "name": "Microsoft Research Blog",
+          "url": "https://www.microsoft.com/en-us/research/blog/feed/",
+          "tags": ["causal inference", "statistics", "research"]
+        },
+        {
+          "name": "Google AI Blog",
+          "url": "https://blog.google/technology/ai/rss/",
+          "tags": ["AI", "machine learning", "causal inference"]
+        },
+        {
+          "name": "arXiv Statistics - Methodology",
+          "url": "https://arxiv.org/rss/stat.ME",
+          "tags": ["statistics", "methodology", "research"]
+        },
+        {
+          "name": "Berkeley AI Research Blog",
+          "url": "https://bair.berkeley.edu/blog/feed.xml",
+          "tags": ["AI research", "causal inference", "statistics"]
+        }
+      ]
+    },
+    "ETL Pipelines": {
+      "description": "Extract, Transform, Load data processing workflows",
+      "sources": [
+        {
+          "name": "AWS Big Data Blog",
+          "url": "https://aws.amazon.com/blogs/big-data/feed/",
+          "tags": ["ETL", "data engineering", "AWS"]
+        },
+        {
+          "name": "Google Cloud Blog - Data Analytics",
+          "url": "https://cloud.google.com/blog/products/data-analytics/rss.xml",
+          "tags": ["ETL", "data pipelines", "Google Cloud"]
+        },
+        {
+          "name": "Azure Data Factory Blog",
+          "url": "https://azure.microsoft.com/en-us/blog/topics/data-analytics/feed/",
+          "tags": ["ETL", "data pipelines", "Azure"]
+        },
+        {
+          "name": "Apache Airflow Blog",
+          "url": "https://airflow.apache.org/blog/feed.xml",
+          "tags": ["workflow orchestration", "ETL", "data pipelines"]
+        }
+      ]
+    },
+    "Data Visualization": {
+      "description": "Visual representation and analysis of data",
+      "sources": [
+        {
+          "name": "Tableau Blog",
+          "url": "https://www.tableau.com/blog/rss.xml",
+          "tags": ["data visualization", "business intelligence", "analytics"]
+        },
+        {
+          "name": "D3.js Blog",
+          "url": "https://d3js.org/feed.xml",
+          "tags": ["data visualization", "JavaScript", "web development"]
+        },
+        {
+          "name": "Plotly Blog",
+          "url": "https://blog.plotly.com/rss.xml",
+          "tags": ["data visualization", "Python", "interactive charts"]
+        },
+        {
+          "name": "Observable Blog",
+          "url": "https://observablehq.com/blog/rss",
+          "tags": ["data visualization", "notebooks", "interactive"]
+        }
+      ]
+    },
+    "Machine Learning": {
+      "description": "Algorithms and systems that learn from data",
+      "sources": [
+        {
+          "name": "Google AI Blog",
+          "url": "https://blog.google/technology/ai/rss/",
+          "tags": ["machine learning", "AI", "research"]
+        },
+        {
+          "name": "OpenAI Blog",
+          "url": "https://openai.com/blog/rss.xml",
+          "tags": ["AI", "machine learning", "research"]
+        },
+        {
+          "name": "Netflix Tech Blog",
+          "url": "https://netflixtechblog.com/feed",
+          "tags": ["machine learning", "recommendation systems", "engineering"]
+        },
+        {
+          "name": "Uber Engineering",
+          "url": "https://eng.uber.com/feed/",
+          "tags": ["machine learning", "data science", "engineering"]
+        },
+        {
+          "name": "AWS Machine Learning Blog",
+          "url": "https://aws.amazon.com/blogs/machine-learning/feed/",
+          "tags": ["machine learning", "AWS", "cloud"]
+        },
+        {
+          "name": "PyTorch Blog",
+          "url": "https://pytorch.org/blog/feed.xml",
+          "tags": ["machine learning", "deep learning", "PyTorch"]
+        }
+      ]
+    },
+    "Cloud Computing": {
+      "description": "Distributed computing services and infrastructure",
+      "sources": [
+        {
+          "name": "AWS Blog",
+          "url": "https://aws.amazon.com/blogs/aws/feed/",
+          "tags": ["cloud computing", "AWS", "infrastructure"]
+        },
+        {
+          "name": "Google Cloud Blog",
+          "url": "https://cloud.google.com/blog/rss",
+          "tags": ["cloud computing", "Google Cloud", "infrastructure"]
+        },
+        {
+          "name": "Microsoft Azure Blog",
+          "url": "https://azure.microsoft.com/en-us/blog/feed/",
+          "tags": ["cloud computing", "Azure", "infrastructure"]
+        },
+        {
+          "name": "Cloudflare Blog",
+          "url": "https://blog.cloudflare.com/rss/",
+          "tags": ["cloud computing", "CDN", "security"]
+        },
+        {
+          "name": "HashiCorp Blog",
+          "url": "https://hashicorp.com/blog/rss.xml",
+          "tags": ["cloud computing", "infrastructure", "DevOps"]
+        }
+      ]
+    },
+    "Cybersecurity": {
+      "description": "Protection of digital systems and data",
+      "sources": [
+        {
+          "name": "Krebs on Security",
+          "url": "https://krebsonsecurity.com/feed/",
+          "tags": ["cybersecurity", "security research", "threats"]
+        },
+        {
+          "name": "SANS Blog",
+          "url": "https://www.sans.org/blog/rss/",
+          "tags": ["cybersecurity", "security training", "research"]
+        },
+        {
+          "name": "Threatpost",
+          "url": "https://threatpost.com/feed/",
+          "tags": ["cybersecurity", "threats", "vulnerabilities"]
+        },
+        {
+          "name": "FireEye Blog",
+          "url": "https://www.fireeye.com/blog/rss.xml",
+          "tags": ["cybersecurity", "threat intelligence", "research"]
+        },
+        {
+          "name": "Security Week",
+          "url": "https://www.securityweek.com/feed/",
+          "tags": ["cybersecurity", "security news", "industry"]
+        }
+      ]
+    },
+    "Blockchain": {
+      "description": "Distributed ledger technology and cryptocurrencies",
+      "sources": [
+        {
+          "name": "CoinDesk",
+          "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+          "tags": ["blockchain", "cryptocurrency", "fintech"]
+        },
+        {
+          "name": "Ethereum Blog",
+          "url": "https://blog.ethereum.org/feed.xml",
+          "tags": ["blockchain", "Ethereum", "smart contracts"]
+        },
+        {
+          "name": "Consensys Blog",
+          "url": "https://consensys.net/blog/feed/",
+          "tags": ["blockchain", "Ethereum", "Web3"]
+        },
+        {
+          "name": "Chainlink Blog",
+          "url": "https://blog.chain.link/rss/",
+          "tags": ["blockchain", "oracles", "smart contracts"]
+        },
+        {
+          "name": "Solana Blog",
+          "url": "https://solana.com/news/rss.xml",
+          "tags": ["blockchain", "Solana", "DeFi"]
+        }
+      ]
+    },
+    "Quantum Computing": {
+      "description": "Computing using quantum-mechanical phenomena",
+      "sources": [
+        {
+          "name": "IBM Research Blog",
+          "url": "https://research.ibm.com/blog/rss.xml",
+          "tags": ["quantum computing", "IBM", "research"]
+        },
+        {
+          "name": "Google Quantum AI",
+          "url": "https://quantumai.google/blog/rss.xml",
+          "tags": ["quantum computing", "Google", "AI"]
+        },
+        {
+          "name": "Microsoft Quantum Blog",
+          "url": "https://cloudblogs.microsoft.com/quantum/feed/",
+          "tags": ["quantum computing", "Microsoft", "Azure Quantum"]
+        },
+        {
+          "name": "Quantum Computing Report",
+          "url": "https://quantumcomputingreport.com/feed/",
+          "tags": ["quantum computing", "industry", "research"]
+        },
+        {
+          "name": "Nature Quantum Information",
+          "url": "https://www.nature.com/npjqi.rss",
+          "tags": ["quantum computing", "research", "academic"]
+        }
+      ]
+    },
+    "Augmented Reality": {
+      "description": "Technology that overlays digital information on the real world",
+      "sources": [
+        {
+          "name": "Road to VR",
+          "url": "https://www.roadtovr.com/feed/",
+          "tags": ["AR", "VR", "mixed reality"]
+        },
+        {
+          "name": "VRScout",
+          "url": "https://vrscout.com/feed/",
+          "tags": ["AR", "VR", "immersive tech"]
+        },
+        {
+          "name": "Unity Blog",
+          "url": "https://blog.unity.com/feed",
+          "tags": ["AR", "VR", "game development"]
+        },
+        {
+          "name": "Microsoft Mixed Reality",
+          "url": "https://techcommunity.microsoft.com/gxcuf89792/rss/board?board.id=MixedRealityBlog",
+          "tags": ["AR", "mixed reality", "HoloLens"]
+        },
+        {
+          "name": "Apple AR/VR News",
+          "url": "https://www.apple.com/newsroom/rss-feed.rss",
+          "tags": ["AR", "Apple", "technology"]
+        }
+      ]
+    },
+    "Bioinformatics": {
+      "description": "Application of computational techniques to biological data",
+      "sources": [
+        {
+          "name": "Nature Bioinformatics",
+          "url": "https://www.nature.com/subjects/bioinformatics.rss",
+          "tags": ["bioinformatics", "computational biology", "research"]
+        },
+        {
+          "name": "BMC Bioinformatics",
+          "url": "https://bmcbioinformatics.biomedcentral.com/articles/most-recent/rss.xml",
+          "tags": ["bioinformatics", "open access", "research"]
+        },
+        {
+          "name": "PLOS Computational Biology",
+          "url": "https://journals.plos.org/ploscompbiol/feed/atom",
+          "tags": ["computational biology", "bioinformatics", "research"]
+        },
+        {
+          "name": "Bioinformatics Oxford",
+          "url": "https://academic.oup.com/rss/site_5293/advanceAccess_3151.xml",
+          "tags": ["bioinformatics", "computational biology", "academic"]
+        },
+        {
+          "name": "Broad Institute Blog",
+          "url": "https://www.broadinstitute.org/blog/rss.xml",
+          "tags": ["genomics", "bioinformatics", "research"]
+        }
+      ]
+    }
+  }
+}

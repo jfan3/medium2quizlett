@@ -36,7 +36,9 @@ struct OccupationSelectionView: View {
             
             Button("Next") {
                 if let occupation = selectedOccupation {
-                    appViewModel.updateOccupation(occupation)
+                    Task {
+                        await appViewModel.updateOccupation(occupation)
+                    }
                     currentStep = .interests
                 }
             }

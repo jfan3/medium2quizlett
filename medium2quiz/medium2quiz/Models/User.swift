@@ -28,6 +28,9 @@ struct User: Codable, Identifiable {
     var overallAccuracy: Double
     var streakDays: Int
     var lastStudyDate: Date?
+    var skillLevel: String
+    var preferredDifficulty: String
+    var dailyStudyGoal: Int
     
     init() {
         self.id = UUID()
@@ -37,6 +40,22 @@ struct User: Codable, Identifiable {
         self.overallAccuracy = 0.0
         self.streakDays = 0
         self.lastStudyDate = nil
+        self.skillLevel = "beginner"
+        self.preferredDifficulty = "medium"
+        self.dailyStudyGoal = 20
+    }
+    
+    init(id: UUID, occupation: Occupation?, interests: [String], isOnboardingComplete: Bool, overallAccuracy: Double, streakDays: Int, lastStudyDate: Date?, skillLevel: String = "beginner", preferredDifficulty: String = "medium", dailyStudyGoal: Int = 20) {
+        self.id = id
+        self.occupation = occupation
+        self.interests = interests
+        self.isOnboardingComplete = isOnboardingComplete
+        self.overallAccuracy = overallAccuracy
+        self.streakDays = streakDays
+        self.lastStudyDate = lastStudyDate
+        self.skillLevel = skillLevel
+        self.preferredDifficulty = preferredDifficulty
+        self.dailyStudyGoal = dailyStudyGoal
     }
     
     var accuracyPercentage: Int {

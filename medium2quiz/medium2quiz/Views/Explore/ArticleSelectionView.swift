@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct ArticleSelectionView: View {
-    let selectedTopics: [String]
+    let articles: [Article]
     @ObservedObject var appViewModel: AppViewModel
     let onBack: () -> Void
     
     @State private var currentArticleIndex = 0
-    @State private var articles: [Article] = []
+    @State private var displayArticles: [Article] = []
     @State private var dragOffset = CGSize.zero
     
     var body: some View {
@@ -33,8 +33,8 @@ struct ArticleSelectionView: View {
             }
             .padding(.horizontal)
             
-            if !articles.isEmpty && currentArticleIndex < articles.count {
-                let article = articles[currentArticleIndex]
+            if !displayArticles.isEmpty && currentArticleIndex < displayArticles.count {
+                let article = displayArticles[currentArticleIndex]
                 
                 VStack(spacing: 16) {
                     // Article card
@@ -144,7 +144,7 @@ struct ArticleSelectionView: View {
                     }
                     
                     // Progress indicator
-                    Text("\(currentArticleIndex + 1) of \(articles.count)")
+                    Text("\(currentArticleIndex + 1) of \(displayArticles.count)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -174,50 +174,37 @@ struct ArticleSelectionView: View {
             Spacer()
         }
         .onAppear {
-            loadArticlesForTopics()
+            displayArticles = articles
         }
-    }
-    
-    private func loadArticlesForTopics() {
-        // Simulate loading articles based on selected topics
-        articles = generateSampleArticles(for: selectedTopics)
     }
     
     private func moveToNextArticle() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if currentArticleIndex < articles.count - 1 {
+            if currentArticleIndex < displayArticles.count - 1 {
                 currentArticleIndex += 1
                 dragOffset = .zero
+            } else {
+                // All articles processed, start flashcard generation
+                startFlashcardGeneration()
             }
         }
     }
     
-    private func acceptArticle(_ article: Article) {
-        appViewModel.addArticle(article)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            moveToNextArticle()
+    private func startFlashcardGeneration() {
+        Task {
+            await appViewModel.generateFlashcardsForQueuedArticles()
         }
+        onBack() // Return to explore view where flashcards will be available
     }
     
-    private func generateSampleArticles(for topics: [String]) -> [Article] {
-        let sampleTitles = [
-            "Understanding Machine Learning Fundamentals",
-            "Advanced Data Visualization Techniques",
-            "Cloud Computing Best Practices",
-            "Cybersecurity in Modern Applications",
-            "Blockchain Technology Deep Dive"
-        ]
+    private func acceptArticle(_ article: Article) {
+        // Queue the article for flashcard generation
+        Task {
+            await appViewModel.queueRSSArticle(article)
+        }
         
-        return sampleTitles.enumerated().map { index, title in
-            Article(
-                title: title,
-                url: "https://example.com/article\(index)",
-                content: "This is a sample article about \(topics.randomElement() ?? "technology"). It contains detailed information and insights that would be valuable for learning. The content is comprehensive and covers various aspects of the topic in depth.",
-                source: .rss,
-                topic: topics.randomElement(),
-                imageURL: nil,
-                publishedDate: Date()
-            )
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            moveToNextArticle()
         }
     }
 }

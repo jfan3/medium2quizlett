@@ -11,6 +11,12 @@ struct Topic: Codable, Identifiable {
         self.isSelected = isSelected
     }
     
+    init(id: UUID, name: String, isSelected: Bool = false) {
+        self.id = id
+        self.name = name
+        self.isSelected = isSelected
+    }
+    
     static let defaultTopics = [
         Topic(name: "Causal Inference"),
         Topic(name: "ETL Pipelines"),

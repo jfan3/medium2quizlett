@@ -40,6 +40,20 @@ struct Article: Codable, Identifiable {
         self.isStarred = false
     }
     
+    init(id: UUID, title: String, url: String?, content: String, source: ContentSource, topic: String?, imageURL: String?, publishedDate: Date, status: ArticleStatus, quizCards: [QuizCard], isStarred: Bool) {
+        self.id = id
+        self.title = title
+        self.url = url
+        self.content = content
+        self.source = source
+        self.topic = topic
+        self.imageURL = imageURL
+        self.publishedDate = publishedDate
+        self.status = status
+        self.quizCards = quizCards
+        self.isStarred = isStarred
+    }
+    
     var totalCards: Int {
         quizCards.count
     }

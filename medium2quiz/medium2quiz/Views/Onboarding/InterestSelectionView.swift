@@ -4,10 +4,8 @@ struct InterestSelectionView: View {
     @ObservedObject var appViewModel: AppViewModel
     @Binding var currentStep: OnboardingStep
     @State private var selectedTopics: Set<String> = []
-    @State private var visibleTopics: Set<String> = []
-    @State private var animationTimer: Timer?
     
-    let topics = Topic.defaultTopics.map { $0.name }
+    let topics = Topic.defaultTopics
     
     var body: some View {
         VStack(spacing: 40) {
@@ -18,29 +16,26 @@ struct InterestSelectionView: View {
                     .font(.title)
                     .fontWeight(.bold)
                 
-                ZStack {
-                    ForEach(Array(visibleTopics.enumerated()), id: \.offset) { index, topic in
-                        TopicBubble(
-                            topic: topic,
-                            isSelected: selectedTopics.contains(topic),
-                            position: getBubblePosition(for: index)
+                Text("Select at least 3 topics you're interested in")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                    ForEach(topics, id: \.id) { topic in
+                        StaticTopicButton(
+                            topic: topic.name,
+                            isSelected: selectedTopics.contains(topic.name)
                         ) {
-                            if selectedTopics.contains(topic) {
-                                _ = selectedTopics.remove(topic)
-                            } else if selectedTopics.count < 5 {
-                                _ = selectedTopics.insert(topic)
-                            }
-                        }
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
-                                withAnimation(.easeOut(duration: 0.5)) {
-                                    _ = visibleTopics.remove(topic)
+                            withAnimation(.spring()) {
+                                if selectedTopics.contains(topic.name) {
+                                    selectedTopics.remove(topic.name)
+                                } else {
+                                    selectedTopics.insert(topic.name)
                                 }
                             }
                         }
                     }
                 }
-                .frame(height: 300)
                 .padding(.horizontal)
                 
                 Text("Selected: \(selectedTopics.count)/5")
@@ -59,7 +54,9 @@ struct InterestSelectionView: View {
                 Spacer()
                 
                 Button("Next") {
-                    appViewModel.updateInterests(Array(selectedTopics))
+                    Task {
+                        await appViewModel.updateInterests(Array(selectedTopics))
+                    }
                     currentStep = .login
                 }
                 .frame(width: 100, height: 50)
@@ -71,71 +68,7 @@ struct InterestSelectionView: View {
             .padding(.horizontal)
             .padding(.bottom, 32)
         }
-        .onAppear {
-            startTopicAnimation()
-        }
-        .onDisappear {
-            animationTimer?.invalidate()
-        }
-    }
-    
-    private func startTopicAnimation() {
-        var topicIndex = 0
-        animationTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-            if topicIndex < topics.count {
-                withAnimation(.spring()) {
-                    _ = visibleTopics.insert(topics[topicIndex])
-                }
-                topicIndex += 1
-            } else {
-                topicIndex = 0
-            }
-        }
-        
-        if !topics.isEmpty {
-            withAnimation(.spring()) {
-                _ = visibleTopics.insert(topics[0])
-            }
-        }
-    }
-    
-    private func getBubblePosition(for index: Int) -> CGPoint {
-        let positions: [CGPoint] = [
-            CGPoint(x: 0, y: -50),
-            CGPoint(x: 100, y: 0),
-            CGPoint(x: -100, y: 50),
-            CGPoint(x: 50, y: -100),
-            CGPoint(x: -50, y: 100)
-        ]
-        return positions[index % positions.count]
     }
 }
 
-struct TopicBubble: View {
-    let topic: String
-    let isSelected: Bool
-    let position: CGPoint
-    let action: () -> Void
-    
-    @State private var scale: CGFloat = 0
-    
-    var body: some View {
-        Button(action: action) {
-            Text(topic)
-                .font(.system(size: 14, weight: .medium))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(isSelected ? Color.blue : Color(.systemGray5))
-                .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(20)
-                .scaleEffect(scale)
-        }
-        .offset(x: position.x, y: position.y)
-        .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                scale = 1.0
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
+// StaticTopicButton is now defined in ExploreView.swift and can be reused

@@ -24,6 +24,11 @@ struct QuizCard: Codable, Identifiable {
     var attempts: Int
     var correctAttempts: Int
     var lastStudied: Date?
+    var masteryLevel: Double
+    var easeFactor: Double
+    var intervalDays: Int
+    var nextReviewDate: Date
+    var reviewStage: Int
     let createdAt: Date
     
     init(articleId: UUID, question: String, answer: String, choices: [String]?, type: QuizCardType, difficulty: QuizCardDifficulty) {
@@ -39,6 +44,11 @@ struct QuizCard: Codable, Identifiable {
         self.attempts = 0
         self.correctAttempts = 0
         self.lastStudied = nil
+        self.masteryLevel = 0.0
+        self.easeFactor = 2.5
+        self.intervalDays = 1
+        self.nextReviewDate = Date()
+        self.reviewStage = 0
         self.createdAt = Date()
     }
     

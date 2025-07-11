@@ -1,0 +1,25 @@
+{
+  "name": "medium2quiz-rss-crawler",
+  "version": "1.0.0",
+  "description": "RSS crawler for medium2quiz app",
+  "main": "rss_crawler.js",
+  "scripts": {
+    "crawl": "node rss_crawler.js",
+    "setup": "npm install"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.3",
+    "axios": "^1.6.0",
+    "dotenv": "^16.6.1",
+    "openai": "^4.20.1",
+    "rss-parser": "^3.13.0"
+  },
+  "keywords": [
+    "rss",
+    "crawler",
+    "articles",
+    "supabase"
+  ],
+  "author": "medium2quiz",
+  "license": "MIT"
+}
