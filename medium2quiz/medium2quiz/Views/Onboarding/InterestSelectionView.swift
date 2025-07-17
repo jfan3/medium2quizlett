@@ -16,7 +16,7 @@ struct InterestSelectionView: View {
                     .font(.title)
                     .fontWeight(.bold)
                 
-                Text("Select at least 3 topics you're interested in")
+                Text("Select 1-5 topics you're interested in")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
@@ -29,7 +29,7 @@ struct InterestSelectionView: View {
                             withAnimation(.spring()) {
                                 if selectedTopics.contains(topic.name) {
                                     selectedTopics.remove(topic.name)
-                                } else {
+                                } else if selectedTopics.count < 5 {
                                     selectedTopics.insert(topic.name)
                                 }
                             }
@@ -60,10 +60,10 @@ struct InterestSelectionView: View {
                     currentStep = .login
                 }
                 .frame(width: 100, height: 50)
-                .background(selectedTopics.count >= 3 ? Color.blue : Color.gray)
+                .background(selectedTopics.count >= 1 ? Color.blue : Color.gray)
                 .foregroundColor(.white)
                 .cornerRadius(12)
-                .disabled(selectedTopics.count < 3)
+                .disabled(selectedTopics.count < 1)
             }
             .padding(.horizontal)
             .padding(.bottom, 32)

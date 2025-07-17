@@ -32,8 +32,9 @@ struct User: Codable, Identifiable {
     var preferredDifficulty: String
     var dailyStudyGoal: Int
     
+    // Create empty user for UI initialization - Use consistent dev ID
     init() {
-        self.id = UUID()
+        self.id = UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? UUID() // Consistent dev user ID
         self.occupation = nil
         self.interests = []
         self.isOnboardingComplete = false
@@ -44,6 +45,7 @@ struct User: Codable, Identifiable {
         self.preferredDifficulty = "medium"
         self.dailyStudyGoal = 20
     }
+    
     
     init(id: UUID, occupation: Occupation?, interests: [String], isOnboardingComplete: Bool, overallAccuracy: Double, streakDays: Int, lastStudyDate: Date?, skillLevel: String = "beginner", preferredDifficulty: String = "medium", dailyStudyGoal: Int = 20) {
         self.id = id

@@ -32,7 +32,7 @@ class EnvironmentConfig {
         return [
             "SUPABASE_URL": "https://fjswkvgochsdmcqeaexc.supabase.co",
             "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqc3drdmdvY2hzZG1jcWVhZXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0OTI5NjMsImV4cCI6MjA2NzA2ODk2M30.OsvnIZE9TX6qzqzeAjdaa9988Bg2aUhBw23761K3n8U",
-            "OPENAI_API_KEY": "" // Remove API key - should be in env_config.txt only
+            "CLAUDE_API_KEY": "" // Remove API key - should be in env_config.txt only
         ]
     }()
     
@@ -44,7 +44,20 @@ class EnvironmentConfig {
         return config["SUPABASE_ANON_KEY"] ?? ""
     }
     
-    static var openAIAPIKey: String {
-        return config["OPENAI_API_KEY"] ?? ""
+    
+    static var claudeAPIKey: String {
+        return config["CLAUDE_API_KEY"] ?? ""
+    }
+    
+    static var devUserEmail: String {
+        return config["DEV_USER_EMAIL"] ?? "dev@test.com"
+    }
+    
+    static var devUserPassword: String {
+        return config["DEV_USER_PASSWORD"] ?? "devpassword"
+    }
+    
+    static var isDevelopment: Bool {
+        return config["IS_DEVELOPMENT"]?.lowercased() == "true"
     }
 }

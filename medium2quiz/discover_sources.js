@@ -1,14 +1,14 @@
-// Dynamic RSS Source Discovery using OpenAI + Web Search
+// Dynamic RSS Source Discovery using Claude + Web Search
 // Run with: node discover_sources.js
 
-const OpenAI = require('openai');
+const Anthropic = require('@anthropic-ai/sdk');
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 // Initialize clients
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+const anthropic = new Anthropic({
+  apiKey: process.env.CLAUDE_API_KEY
 });
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://fjswkvgochsdmcqeaexc.supabase.co';
@@ -42,14 +42,14 @@ Ensure all URLs are valid RSS/XML feeds that can be parsed.
 
 Return ONLY valid JSON array, no markdown or explanation:`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
+    const response = await anthropic.messages.create({
+      model: "claude-3-haiku-20240307",
+      max_tokens: 2000,
       temperature: 0.3,
-      max_tokens: 2000
+      messages: [{ role: "user", content: prompt }]
     });
 
-    const content = response.choices[0].message.content.trim();
+    const content = response.content[0].text.trim();
     
     // Parse JSON response
     let sources;
@@ -58,12 +58,12 @@ Return ONLY valid JSON array, no markdown or explanation:`;
       const jsonStr = content.replace(/```json\n?|\n?```/g, '').trim();
       sources = JSON.parse(jsonStr);
     } catch (parseError) {
-      console.error('❌ Failed to parse OpenAI response as JSON:', parseError.message);
+      console.error('❌ Failed to parse Claude response as JSON:', parseError.message);
       console.log('Raw response:', content);
       return [];
     }
 
-    console.log(`✅ OpenAI suggested ${sources.length} RSS sources`);
+    console.log(`✅ Claude suggested ${sources.length} RSS sources`);
 
     // Validate and verify RSS feeds
     const validatedSources = [];
@@ -186,14 +186,14 @@ Focus on the most important and learnable concepts. Make questions specific and 
 
 Return ONLY valid JSON array:`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
+    const response = await anthropic.messages.create({
+      model: "claude-3-haiku-20240307",
+      max_tokens: 1500,
       temperature: 0.4,
-      max_tokens: 1500
+      messages: [{ role: "user", content: prompt }]
     });
 
-    const content = response.choices[0].message.content.trim();
+    const content = response.content[0].text.trim();
     
     let flashcards;
     try {

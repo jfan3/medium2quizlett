@@ -64,6 +64,49 @@ struct Article: Codable, Identifiable {
     
     var progress: Double {
         guard totalCards > 0 else { return 0 }
-        return Double(completedCards) / Double(totalCards)
+        let progress = Double(completedCards) / Double(totalCards)
+        return min(max(progress, 0), 1) // Clamp between 0 and 1
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case url
+        case content
+        case source = "source_type"
+        case topic
+        case imageURL = "image_url"
+        case publishedDate = "published_date"
+        // Note: status, quizCards, isStarred are UI-only properties, not stored in database
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        content = try container.decode(String.self, forKey: .content)
+        source = try container.decode(ContentSource.self, forKey: .source)
+        topic = try container.decodeIfPresent(String.self, forKey: .topic)
+        imageURL = try container.decodeIfPresent(String.self, forKey: .imageURL)
+        publishedDate = try container.decode(Date.self, forKey: .publishedDate)
+        
+        // UI-only properties with defaults
+        status = .queued
+        quizCards = []
+        isStarred = false
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(url, forKey: .url)
+        try container.encode(content, forKey: .content)
+        try container.encode(source, forKey: .source)
+        try container.encodeIfPresent(topic, forKey: .topic)
+        try container.encodeIfPresent(imageURL, forKey: .imageURL)
+        try container.encode(publishedDate, forKey: .publishedDate)
+        // Note: status, quizCards, isStarred are not encoded to database
     }
 }

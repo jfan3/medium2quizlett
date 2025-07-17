@@ -1,5 +1,5 @@
 // RSS Discovery Edge Function
-// Automatically discovers RSS sources for given topics using OpenAI
+// Automatically discovers RSS sources for given topics using Claude
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/+esm'
@@ -324,11 +324,23 @@ Return ONLY valid JSON array, no markdown or explanation:`
       }
     }
 
+    // Final verification - count what's actually in the database
+    const { count: finalCount, error: countError } = await supabase
+      .from('rss_sources')
+      .select('*', { count: 'exact', head: true })
+    
+    if (countError) {
+      console.error('Error counting final sources:', countError)
+    } else {
+      console.log(`🔢 Final count of sources in database: ${finalCount}`)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         sources_discovered: validatedSources.length,
         sources: validatedSources,
+        sources_in_db: finalCount || 0,
         message: `Successfully discovered and validated ${validatedSources.length} RSS sources`
       }),
       {

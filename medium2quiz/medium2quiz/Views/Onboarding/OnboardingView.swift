@@ -30,6 +30,9 @@ struct OnboardingView: View {
             }
             .navigationBarHidden(true)
         }
+        .onAppear {
+            print("🎯 OnboardingView appeared - currentStep: \(currentStep)")
+        }
     }
 }
 
@@ -106,12 +109,24 @@ struct LoginView: View {
                 
                 // Dev Login Button
                 Button("🔧 Dev Login (Skip Auth)") {
-                    // Create a mock dev user
+                    // Create a mock dev user with a fixed UUID for development
                     Task { @MainActor in
-                        appViewModel.user.occupation = .softwareEngineer
-                        appViewModel.user.interests = ["Engineering", "Data Science"]
+                        // Use a fixed UUID for dev user (you can generate one and keep it constant)
+                        let devUserId = UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? UUID()
+                        appViewModel.user = User(
+                            id: devUserId,
+                            occupation: .softwareEngineer,
+                            interests: ["Engineering", "Data Science"],
+                            isOnboardingComplete: true,
+                            overallAccuracy: 0.0,
+                            streakDays: 0,
+                            lastStudyDate: nil,
+                            skillLevel: "beginner",
+                            preferredDifficulty: "medium",
+                            dailyStudyGoal: 20
+                        )
                         appViewModel.isAuthenticated = true
-                        appViewModel.completeOnboardingSync()
+                        appViewModel.isOnboardingComplete = true
                     }
                 }
                 .frame(maxWidth: .infinity)

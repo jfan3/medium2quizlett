@@ -6,7 +6,7 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            StudyView(appViewModel: appViewModel)
+            StudyModeSelectionView(viewModel: appViewModel)
                 .tabItem {
                     Image(systemName: selectedTab == 0 ? "book.fill" : "book")
                     Text("Study")
@@ -43,5 +43,11 @@ struct MainTabView: View {
                 .tag(4)
         }
         .accentColor(.blue)
+        .onAppear {
+            // Ensure articles are loaded when the main tab view appears
+            Task {
+                await appViewModel.loadUserArticles()
+            }
+        }
     }
 }

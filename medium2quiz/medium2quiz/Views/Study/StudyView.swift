@@ -54,12 +54,13 @@ struct StudyView: View {
         guard let article = currentArticle,
               currentCardIndex < article.quizCards.count else {
             return QuizCard(
+                userId: appViewModel.currentUser?.id ?? UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
                 articleId: UUID(),
                 question: "",
                 answer: "",
                 choices: nil,
-                type: .flashcard,
-                difficulty: .medium
+                type: QuizCardType.flashcard,
+                difficulty: QuizCardDifficulty.medium
             )
         }
         return article.quizCards[currentCardIndex]
@@ -170,7 +171,7 @@ struct StudyProgressView: View {
                         .fontWeight(.medium)
                 }
                 
-                ProgressView(value: Double(flashcardProgress), total: Double(totalFlashcards))
+                ProgressView(value: Double(flashcardProgress), total: Double(max(totalFlashcards, 1)))
                     .progressViewStyle(LinearProgressViewStyle(tint: .blue))
             }
             
@@ -185,7 +186,7 @@ struct StudyProgressView: View {
                         .fontWeight(.medium)
                 }
                 
-                ProgressView(value: Double(articleProgress), total: Double(totalArticles))
+                ProgressView(value: Double(articleProgress), total: Double(max(totalArticles, 1)))
                     .progressViewStyle(LinearProgressViewStyle(tint: .orange))
             }
         }

@@ -291,16 +291,19 @@ async function calculateRelevanceScore(title: string, content: string, source: a
   
   try {
     // Use AI to determine content relevance to the source topics
-    const openAIKey = Deno.env.get('OPENAI_API_KEY')
-    if (openAIKey && source.topics && source.topics.length > 0) {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const claudeKey = Deno.env.get('CLAUDE_API_KEY')
+    if (claudeKey && source.topics && source.topics.length > 0) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${openAIKey}`,
-          'Content-Type': 'application/json',
+          'x-api-key': claudeKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'claude-3-haiku-20240307',
+          max_tokens: 10,
+          temperature: 0,
           messages: [{
             role: 'user',
             content: `Rate the relevance of this article to these topics: ${source.topics.join(', ')}.
@@ -308,15 +311,13 @@ async function calculateRelevanceScore(title: string, content: string, source: a
             Article content preview: ${content.substring(0, 500)}
             
             Return only a number between 0 and 1, where 1 is highly relevant and 0 is not relevant.`
-          }],
-          max_tokens: 10,
-          temperature: 0,
+          }]
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        const aiScore = parseFloat(data.choices[0]?.message?.content?.trim() || '0.5')
+        const aiScore = parseFloat(data.content[0]?.text?.trim() || '0.5')
         score = isNaN(aiScore) ? 0.5 : Math.min(1.0, Math.max(0.0, aiScore))
       }
     }

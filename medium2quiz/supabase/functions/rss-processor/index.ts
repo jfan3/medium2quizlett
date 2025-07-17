@@ -738,29 +738,30 @@ function cleanText(text: string): string {
 }
 
 async function extractTopics(content: string): Promise<string[]> {
-  const openAIKey = Deno.env.get('OPENAI_API_KEY')
-  if (!openAIKey) return []
+  const claudeKey = Deno.env.get('CLAUDE_API_KEY')
+  if (!claudeKey) return []
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIKey}`,
-        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 100,
+        temperature: 0.3,
         messages: [{
           role: 'user',
           content: `Extract 2-4 key technical topics from this content. Choose from these categories: Machine Learning, Cloud Computing, Cybersecurity, Blockchain, Data Visualization, ETL Pipelines, Causal Inference, Quantum Computing, Augmented Reality, Bioinformatics. Return only a JSON array of topic names: ${content.substring(0, 1500)}`
-        }],
-        max_tokens: 100,
-        temperature: 0.3,
+        }]
       }),
     })
 
     const data = await response.json()
-    const topicsStr = data.choices[0]?.message?.content || '[]'
+    const topicsStr = data.content[0]?.text || '[]'
     const topics = JSON.parse(topicsStr)
     return Array.isArray(topics) ? topics.slice(0, 4) : []
   } catch (error) {
@@ -770,29 +771,30 @@ async function extractTopics(content: string): Promise<string[]> {
 }
 
 async function assessDifficulty(content: string): Promise<string> {
-  const openAIKey = Deno.env.get('OPENAI_API_KEY') 
-  if (!openAIKey) return 'medium'
+  const claudeKey = Deno.env.get('CLAUDE_API_KEY') 
+  if (!claudeKey) return 'medium'
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIKey}`,
-        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 10,
+        temperature: 0,
         messages: [{
           role: 'user',
           content: `Assess the technical difficulty of this content for software professionals. Return only one word: "beginner", "intermediate", or "advanced": ${content.substring(0, 1000)}`
-        }],
-        max_tokens: 10,
-        temperature: 0,
+        }]
       }),
     })
 
     const data = await response.json()
-    const difficulty = data.choices[0]?.message?.content?.toLowerCase()?.trim() || 'medium'
+    const difficulty = data.content[0]?.text?.toLowerCase()?.trim() || 'medium'
     return ['beginner', 'intermediate', 'advanced'].includes(difficulty) ? difficulty : 'intermediate'
   } catch (error) {
     console.error('Difficulty assessment failed:', error)

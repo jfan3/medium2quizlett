@@ -3,9 +3,9 @@
 ## ✅ Fixed Issues
 
 1. **RSS Crawler**: Real article fetching from RSS sources
-2. **Dynamic Discovery**: OpenAI-powered RSS source discovery  
+2. **Dynamic Discovery**: Claude-powered RSS source discovery  
 3. **Error Handling**: Clear messages when no articles found
-4. **OpenAI Integration**: Real flashcard generation using your API key
+4. **Claude Integration**: Real flashcard generation using your API key
 
 ## 🚀 Setup Instructions
 
@@ -24,7 +24,7 @@ Make sure your Supabase database is set up with the enhanced schema:
 ### 3. Environment Configuration
 Ensure your `env_config.txt` has valid keys:
 - `SUPABASE_URL` and `SUPABASE_ANON_KEY`
-- `OPENAI_API_KEY` (this will now be used for flashcard generation)
+- `CLAUDE_API_KEY` (this will now be used for flashcard generation)
 
 ## 📋 Manual Operations (Required)
 
@@ -59,7 +59,7 @@ SELECT COUNT(*) FROM articles WHERE created_at > NOW() - INTERVAL '7 days';
 ### Daily Usage:
 1. Crawl fresh articles: `npm run crawl` 
 2. Use iOS app to select articles
-3. OpenAI will generate flashcards automatically
+3. Claude will generate flashcards automatically
 4. Study your personalized flashcards
 
 ## 🐛 Troubleshooting
@@ -79,9 +79,9 @@ npm run crawl
 # In Supabase: SELECT COUNT(*) FROM articles;
 ```
 
-### "OpenAI API Error"
-- Check your `OPENAI_API_KEY` in `env_config.txt`
-- Ensure you have OpenAI credits available
+### "Claude API Error"
+- Check your `CLAUDE_API_KEY` in `env_config.txt`
+- Ensure you have Claude credits available
 - Check the console logs for specific error messages
 
 ### "Database Connection Error"
@@ -91,8 +91,8 @@ npm run crawl
 
 ## 📊 Monitoring
 
-### Check OpenAI Usage
-- Go to https://platform.openai.com/usage
+### Check Claude Usage
+- Go to https://console.anthropic.com/usage
 - You should now see API calls for flashcard generation
 
 ### Database Contents
@@ -111,21 +111,21 @@ SELECT COUNT(*) FROM quiz_cards;
 ## 🎯 Expected Flow
 
 1. **Topic Selection** → Triggers RSS source discovery if none exist
-2. **Source Discovery** → OpenAI finds relevant RSS feeds for your topics  
+2. **Source Discovery** → Claude finds relevant RSS feeds for your topics  
 3. **Article Crawling** → Fetches real articles from discovered sources
 4. **Article Selection** → Swipe interface to queue articles
-5. **Flashcard Generation** → OpenAI creates educational flashcards
+5. **Flashcard Generation** → Claude creates educational flashcards
 6. **Study Session** → Spaced repetition learning system
 
 ## ⚡ Performance Tips
 
 - Run `npm run crawl` daily for fresh content
 - Discover sources for new topics as needed
-- Monitor OpenAI usage to stay within limits
+- Monitor Claude usage to stay within limits
 - Check Supabase storage/bandwidth usage
 
 Now your app will:
 - ✅ Use real RSS sources (not static)
-- ✅ Generate actual OpenAI flashcards  
+- ✅ Generate actual Claude flashcards  
 - ✅ Show proper errors when things go wrong
 - ✅ Crawl fresh articles regularly

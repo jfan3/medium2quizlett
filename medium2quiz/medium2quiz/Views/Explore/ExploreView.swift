@@ -15,7 +15,7 @@ struct ExploreView: View {
                             .font(.title)
                             .fontWeight(.bold)
                         
-                        Text("Select 5 topics you're interested in")
+                        Text("Select 1-5 topics you're interested in")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
@@ -42,7 +42,7 @@ struct ExploreView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             
-                            if selectedTopics.count >= 5 {
+                            if selectedTopics.count >= 1 {
                                 Button("Setup RSS Feeds") {
                                     showingRSSSetup = true
                                 }

@@ -275,23 +275,8 @@ struct RSSSetupProgressView: View {
             let userArticles = try await SupabaseService.shared.fetchUserArticles(userId: userId)
             
             await MainActor.run {
-                // Convert to Article objects and update progress
-                setupProgress.processedArticles = userArticles.compactMap { userArticle -> Article? in
-                    guard let articleDetail = userArticle.article else { return nil }
-                    return Article(
-                        id: articleDetail.id,
-                        title: articleDetail.title,
-                        url: articleDetail.url,
-                        content: articleDetail.content ?? "",
-                        source: ContentSource(rawValue: articleDetail.sourceType) ?? .rss,
-                        topic: articleDetail.topics.first,
-                        imageURL: nil,
-                        publishedDate: articleDetail.publishedDate ?? Date(),
-                        status: ArticleStatus(rawValue: userArticle.status) ?? .queued,
-                        quizCards: [],
-                        isStarred: userArticle.isStarred
-                    )
-                }
+                // Update progress with fetched articles
+                setupProgress.processedArticles = userArticles
                 
                 // Also update the app's articles
                 appViewModel.articles = setupProgress.processedArticles

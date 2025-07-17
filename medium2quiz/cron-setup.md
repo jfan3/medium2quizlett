@@ -25,7 +25,7 @@ supabase functions deploy rss-scheduler
 In your Supabase dashboard:
 1. Go to **Settings** → **Edge Functions**
 2. Add these environment variables:
-   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `CLAUDE_API_KEY`: Your Claude API key
    - `SUPABASE_URL`: Your Supabase project URL
    - `SUPABASE_SERVICE_ROLE_KEY`: Your service role key
    - `SUPABASE_ANON_KEY`: Your anonymous key
@@ -96,7 +96,7 @@ curl -X POST "https://your-project.supabase.co/functions/v1/rss-scheduler" \
 
 ## How It Works
 
-1. **RSS Discovery** (`rss-discovery`): Uses OpenAI to find RSS sources for topics
+1. **RSS Discovery** (`rss-discovery`): Uses Claude to find RSS sources for topics
 2. **RSS Crawler** (`rss-crawler`): Fetches articles from RSS feeds
 3. **RSS Scheduler** (`rss-scheduler`): Manages automated crawling with intelligent scheduling
 4. **iOS App**: Calls Edge Functions directly - no local scripts needed!
@@ -104,7 +104,7 @@ curl -X POST "https://your-project.supabase.co/functions/v1/rss-scheduler" \
 ## Benefits
 
 - ✅ **Fully Cloud-Based**: No local scripts needed
-- ✅ **Automatic Discovery**: OpenAI finds RSS sources
+- ✅ **Automatic Discovery**: Claude finds RSS sources
 - ✅ **Intelligent Scheduling**: Prioritizes high-quality sources
 - ✅ **Error Handling**: Graceful failures and retries
 - ✅ **Scalable**: Handles hundreds of RSS sources

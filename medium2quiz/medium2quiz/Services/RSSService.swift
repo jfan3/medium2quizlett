@@ -24,7 +24,7 @@ struct UserArticleInsert: Codable {
     let preferenceScore: Double
     let personalizedScore: Double
     let isStarred: Bool
-    let createdAt: Date
+    let queuedAt: Date
     
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
@@ -33,7 +33,7 @@ struct UserArticleInsert: Codable {
         case preferenceScore = "preference_score"
         case personalizedScore = "personalized_score"
         case isStarred = "is_starred"
-        case createdAt = "created_at"
+        case queuedAt = "queued_at"
     }
 }
 
@@ -42,6 +42,9 @@ enum RSSError: LocalizedError {
     case noSourcesFound(topics: [String])
     case noArticlesFound
     case discoveryFailed(reason: String)
+    case invalidURL
+    case networkError
+    case parsingError
     
     var errorDescription: String? {
         switch self {
@@ -51,6 +54,12 @@ enum RSSError: LocalizedError {
             return "No articles could be fetched from RSS sources. Please check your internet connection and try again."
         case .discoveryFailed(let reason):
             return "Failed to discover RSS sources: \(reason)"
+        case .invalidURL:
+            return "Invalid RSS feed URL"
+        case .networkError:
+            return "Network error while fetching RSS feed"
+        case .parsingError:
+            return "Failed to parse RSS feed content"
         }
     }
 }
@@ -60,27 +69,26 @@ struct UserRSSSubscription: Codable {
     let userId: UUID
     let rssSourceId: UUID
     let isActive: Bool
-    let selectedTopics: [String]
-    let priorityLevel: String
-    let lastFetchedAt: Date?
-    let createdAt: Date
+    let subscriptionStrength: Double
+    let priorityLevel: Int
+    let subscribedAt: Date
     
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case rssSourceId = "rss_source_id"
         case isActive = "is_active"
-        case selectedTopics = "selected_topics"
+        case subscriptionStrength = "subscription_strength"
         case priorityLevel = "priority_level"
-        case lastFetchedAt = "last_fetched_at"
-        case createdAt = "created_at"
+        case subscribedAt = "subscribed_at"
     }
 }
 
 struct RSSFetchSchedule: Codable {
     let userId: UUID
     let rssSourceId: UUID
-    let fetchFrequency: String
-    let nextScheduledFetch: Date
+    let fetchFrequency: Int
+    let nextFetchTime: Date
+    let priorityScore: Double
     let isActive: Bool
     let createdAt: Date
     
@@ -88,7 +96,8 @@ struct RSSFetchSchedule: Codable {
         case userId = "user_id"
         case rssSourceId = "rss_source_id"
         case fetchFrequency = "fetch_frequency"
-        case nextScheduledFetch = "next_scheduled_fetch"
+        case nextFetchTime = "next_fetch_time"
+        case priorityScore = "priority_score"
         case isActive = "is_active"
         case createdAt = "created_at"
     }
@@ -148,30 +157,95 @@ class RSSService: ObservableObject {
         )
     }
     
+    // MARK: - User Management
+    
+    /// Ensures a user exists in the users table, creates if missing
+    private func ensureUserExists(userId: UUID) async throws {
+        print("🔍 DEBUG: Checking if user \(userId) exists in users table...")
+        
+        // Check if user exists
+        do {
+            let existingUsers: [UserProfile] = try await supabaseClient
+                .from("users")
+                .select("*")
+                .eq("id", value: userId)
+                .execute()
+                .value
+            
+            print("🔍 DEBUG: Found \(existingUsers.count) existing users")
+            
+            if existingUsers.isEmpty {
+            print("🔧 DEBUG: User \(userId) not found, creating user record...")
+            
+            // Create basic user record
+            let newUser = UserProfile(
+                id: userId,
+                email: "", // Will be updated later
+                occupation: nil,
+                companyInterests: [],
+                overallAccuracy: 0.0,
+                streakDays: 0,
+                lastStudyDate: nil,
+                onboardingComplete: false,
+                skillLevel: "beginner",
+                preferredDifficulty: "medium",
+                dailyStudyGoal: 5,
+                createdAt: Date(),
+                updatedAt: Date()
+            )
+            
+            try await supabaseClient
+                .from("users")
+                .insert([newUser])
+                .execute()
+            
+                print("✅ DEBUG: Created user record for \(userId)")
+            } else {
+                print("✅ DEBUG: User \(userId) already exists")
+            }
+        } catch {
+            print("❌ DEBUG: Failed to check/create user: \(error)")
+            throw error
+        }
+    }
+    
     // MARK: - RSS Feed Management
     
     /// Sets up RSS feeds for a user based on their selected topics with intelligent scheduling
     func setupUserFeeds(userId: UUID, selectedTopics: [String]) async throws {
+        // First, ensure the user exists in the users table
+        try await ensureUserExists(userId: userId)
+        
         var rssources: [RSSSource]
         
         do {
             // First, try to get all active RSS sources
+            print("🔍 DEBUG: Querying for active RSS sources...")
+            let response = try await supabaseClient
+                .from("rss_sources")
+                .select("*")
+                .eq("is_active", value: true)
+                .execute()
+            
+            print("🔍 DEBUG: Initial query status: \(response.status)")
             let allSources: [RSSSource] = try await supabaseClient
                 .from("rss_sources")
                 .select("*")
                 .eq("is_active", value: true)
                 .execute()
                 .value
+            print("🔍 DEBUG: Found \(allSources.count) active sources")
             
-            // Filter sources that match any of the selected topics
+            // Filter sources that match any of the selected topics with exact matching
             rssources = allSources.filter { source in
-                // Check if any of the source's topics match any of the selected topics
-                let sourceTopicsLower = source.topics.map { $0.lowercased() }
-                let selectedTopicsLower = selectedTopics.map { $0.lowercased() }
+                let sourceTopicsLower = source.topics.map { $0.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) }
+                let selectedTopicsLower = selectedTopics.map { $0.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) }
                 
+                // Use exact matching instead of contains to prevent false positives
                 for sourceTopic in sourceTopicsLower {
                     for selectedTopic in selectedTopicsLower {
-                        if sourceTopic.contains(selectedTopic) || selectedTopic.contains(sourceTopic) {
+                        if sourceTopic == selectedTopic {
+                            print("✅ Topic match found: '\(sourceTopic)' == '\(selectedTopic)' for source: \(source.name)")
                             return true
                         }
                     }
@@ -189,16 +263,68 @@ class RSSService: ObservableObject {
                 // Add a longer delay to ensure database writes complete
                 try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
                 
-                // Debug: Check what's actually in the database
-                let allSourcesDebug: [RSSSource] = try await supabaseClient
-                    .from("rss_sources")
-                    .select("*")
-                    .execute()
-                    .value
-                
-                print("🔍 DEBUG: Total sources in database: \(allSourcesDebug.count)")
-                for source in allSourcesDebug {
-                    print("  - \(source.name): topics = \(source.topics)")
+                // Debug: Check what's actually in the database with better error handling
+                do {
+                    print("🔍 DEBUG: Attempting to query rss_sources table...")
+                    let response = try await supabaseClient
+                        .from("rss_sources")
+                        .select("*")
+                        .execute()
+                    
+                    print("🔍 DEBUG: Query executed successfully")
+                    print("🔍 DEBUG: Response status: \(response.status)")
+                    print("🔍 DEBUG: Response data type: \(type(of: response.value))")
+                    
+                    let allSourcesDebug: [RSSSource] = try await supabaseClient
+                        .from("rss_sources")
+                        .select("*")
+                        .execute()
+                        .value
+                    print("🔍 DEBUG: Total sources in database: \(allSourcesDebug.count)")
+                    
+                    for source in allSourcesDebug {
+                        print("  - \(source.name): topics = \(source.topics)")
+                    }
+                } catch {
+                    print("❌ DEBUG: Failed to query rss_sources: \(error)")
+                    print("❌ DEBUG: Error type: \(type(of: error))")
+                    print("❌ DEBUG: Error description: \(error.localizedDescription)")
+                    
+                    // Try a simpler query to test basic connectivity
+                    do {
+                        print("🔍 DEBUG: Trying simpler query...")
+                        let simpleResponse = try await supabaseClient
+                            .from("rss_sources")
+                            .select("id")
+                            .limit(1)
+                            .execute()
+                        print("✅ DEBUG: Simple query worked, status: \(simpleResponse.status)")
+                    } catch {
+                        print("❌ DEBUG: Even simple query failed: \(error)")
+                    }
+                    
+                    // Try REST API directly to test RLS
+                    do {
+                        print("🔍 DEBUG: Testing direct REST API call...")
+                        guard let url = URL(string: "\(EnvironmentConfig.supabaseURL)/rest/v1/rss_sources?select=id,name&limit=5") else {
+                            print("❌ DEBUG: Invalid REST URL")
+                            return
+                        }
+                        
+                        var request = URLRequest(url: url)
+                        request.setValue("Bearer \(EnvironmentConfig.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+                        request.setValue("application/json", forHTTPHeaderField: "apikey")
+                        
+                        let (data, response) = try await URLSession.shared.data(for: request)
+                        
+                        if let httpResponse = response as? HTTPURLResponse {
+                            print("🔍 DEBUG: REST API response status: \(httpResponse.statusCode)")
+                            let responseText = String(data: data, encoding: .utf8) ?? "No data"
+                            print("🔍 DEBUG: REST API response: \(responseText.prefix(200))")
+                        }
+                    } catch {
+                        print("❌ DEBUG: REST API test failed: \(error)")
+                    }
                 }
                 
                 // Retry after discovery - try multiple approaches
@@ -268,10 +394,9 @@ class RSSService: ObservableObject {
                 userId: userId,
                 rssSourceId: source.id,
                 isActive: true,
-                selectedTopics: selectedTopics,
-                priorityLevel: "medium",
-                lastFetchedAt: nil,
-                createdAt: Date()
+                subscriptionStrength: 1.0,
+                priorityLevel: 1,
+                subscribedAt: Date()
             )
         }
         
@@ -285,8 +410,9 @@ class RSSService: ObservableObject {
             RSSFetchSchedule(
                 userId: userId,
                 rssSourceId: source.id,
-                fetchFrequency: "hourly",
-                nextScheduledFetch: Date(),
+                fetchFrequency: 3600, // 1 hour in seconds
+                nextFetchTime: Date(),
+                priorityScore: 1.0,
                 isActive: true,
                 createdAt: Date()
             )
@@ -306,6 +432,9 @@ class RSSService: ObservableObject {
             
             // Add a delay to allow RSS discovery to complete database writes
             try await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+            
+            // Actually trigger the RSS crawler!
+            try await crawlRSSFeeds()
             
             // Wait for articles to be crawled and create user articles
             let articleCount = try await waitForArticlesToBeCrawled(for: rssources.map { $0.id })
@@ -367,7 +496,7 @@ class RSSService: ObservableObject {
                 preferenceScore: calculatePreferenceScore(for: article),
                 personalizedScore: 0.5,
                 isStarred: false,
-                createdAt: Date()
+                queuedAt: Date()
             )
         }
         
@@ -378,6 +507,18 @@ class RSSService: ObservableObject {
                 .execute()
             
             print("📚 Created \(userArticles.count) user article entries")
+            
+            // Automatically generate flashcards for new articles
+            print("🎯 Triggering automatic flashcard generation...")
+            Task {
+                do {
+                    let articleIds = articles.map { $0.id }
+                    try await SupabaseService.shared.generateFlashcardsForArticles(articleIds: articleIds)
+                    print("✅ Flashcards generated successfully for new articles")
+                } catch {
+                    print("⚠️ Flashcard generation failed but continuing: \(error)")
+                }
+            }
         }
     }
     
@@ -433,8 +574,12 @@ class RSSService: ObservableObject {
                    let sourcesDiscovered = result["sources_discovered"] as? Int,
                    success {
                     print("✅ Successfully discovered \(sourcesDiscovered) RSS sources")
+                    if let sourcesInDb = result["sources_in_db"] as? Int {
+                        print("📊 Sources actually in database: \(sourcesInDb)")
+                    }
                 } else {
                     print("⚠️ Discovery completed but with unexpected response format")
+                    print("Response data: \(String(data: data, encoding: .utf8) ?? "nil")")
                 }
             } else {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
@@ -675,10 +820,13 @@ class RSSService: ObservableObject {
     /// Triggers RSS crawling using Supabase Edge Function
     private func crawlRSSFeeds() async throws {
         print("🕷️ Calling RSS crawler Edge Function...")
+        print("📍 Using Supabase URL: \(EnvironmentConfig.supabaseURL)")
         
         guard let url = URL(string: "\(EnvironmentConfig.supabaseURL)/functions/v1/rss-crawler") else {
             throw RSSError.discoveryFailed(reason: "Invalid Supabase URL")
         }
+        
+        print("🔗 Full crawler URL: \(url.absoluteString)")
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -693,11 +841,14 @@ class RSSService: ObservableObject {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
             
+            print("📡 Making request to RSS crawler...")
             let (data, response) = try await URLSession.shared.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw RSSError.discoveryFailed(reason: "Invalid response from RSS crawler")
             }
+            
+            print("📥 Received response with status: \(httpResponse.statusCode)")
             
             if httpResponse.statusCode == 200 {
                 if let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -710,14 +861,196 @@ class RSSService: ObservableObject {
                 }
             } else {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-                print("⚠️ RSS crawling failed: \(errorMessage)")
+                print("⚠️ RSS crawling failed with status \(httpResponse.statusCode): \(errorMessage)")
                 // Don't throw here - we want to try getting existing articles from database
                 print("⚠️ RSS crawling skipped - using existing articles from database")
             }
         } catch {
             print("⚠️ Failed to call RSS crawler: \(error.localizedDescription)")
-            print("⚠️ RSS crawling skipped - using existing articles from database")
+            print("⚠️ Trying fallback RSS crawler...")
+            
+            // Fallback: Try direct RSS crawling if edge function fails
+            do {
+                try await fallbackRSSCrawler()
+                print("✅ Fallback RSS crawler completed")
+            } catch {
+                print("⚠️ Fallback RSS crawler also failed: \(error.localizedDescription)")
+                print("⚠️ RSS crawling skipped - using existing articles from database")
+            }
         }
+    }
+    
+    /// Fallback RSS crawler when edge function is not available
+    private func fallbackRSSCrawler() async throws {
+        print("🔍 Starting fallback RSS crawler...")
+        
+        // Get active RSS sources from database
+        let sources: [RSSSource] = try await supabaseClient
+            .from("rss_sources")
+            .select("*")
+            .eq("is_active", value: true)
+            .limit(5) // Limit for performance
+            .execute()
+            .value
+        
+        print("📡 Found \(sources.count) active RSS sources to crawl")
+        
+        var totalArticles = 0
+        
+        for source in sources {
+            do {
+                let articles = try await crawlSingleRSSSource(source)
+                totalArticles += articles.count
+                print("✅ Crawled \(articles.count) articles from \(source.name)")
+                
+                // Insert articles into database
+                if !articles.isEmpty {
+                    try await insertArticles(articles, sourceId: source.id)
+                }
+                
+            } catch {
+                print("⚠️ Failed to crawl \(source.name): \(error.localizedDescription)")
+                continue
+            }
+        }
+        
+        print("✅ Fallback crawler completed: \(totalArticles) total articles fetched")
+    }
+    
+    /// Crawl a single RSS source
+    private func crawlSingleRSSSource(_ source: RSSSource) async throws -> [Article] {
+        guard let url = URL(string: source.url) else {
+            throw RSSError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue("medium2quiz-app/1.0", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 15.0
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw RSSError.networkError
+        }
+        
+        guard let xmlString = String(data: data, encoding: .utf8) else {
+            throw RSSError.parsingError
+        }
+        
+        // Basic RSS parsing - look for <item> tags
+        return parseRSSItems(xmlString, source: source)
+    }
+    
+    /// Basic RSS parser for fallback
+    private func parseRSSItems(_ xmlString: String, source: RSSSource) -> [Article] {
+        var articles: [Article] = []
+        
+        // Simple regex-based parsing for <item> elements
+        let itemPattern = "<item[^>]*>([\\s\\S]*?)</item>"
+        let titlePattern = "<title[^>]*>([^<]*)</title>"
+        let linkPattern = "<link[^>]*>([^<]*)</link>"
+        let descriptionPattern = "<description[^>]*>([\\s\\S]*?)</description>"
+        
+        do {
+            let itemRegex = try NSRegularExpression(pattern: itemPattern, options: [])
+            let titleRegex = try NSRegularExpression(pattern: titlePattern, options: [])
+            let linkRegex = try NSRegularExpression(pattern: linkPattern, options: [])
+            let descriptionRegex = try NSRegularExpression(pattern: descriptionPattern, options: [])
+            
+            let range = NSRange(location: 0, length: xmlString.utf16.count)
+            let items = itemRegex.matches(in: xmlString, options: [], range: range)
+            
+            for item in items.prefix(10) { // Limit to 10 articles per source
+                let itemRange = item.range(at: 1)
+                let itemContent = String(xmlString[Range(itemRange, in: xmlString)!])
+                
+                var title = ""
+                var link = ""
+                var description = ""
+                
+                // Extract title
+                if let titleMatch = titleRegex.firstMatch(in: itemContent, range: NSRange(itemContent.startIndex..., in: itemContent)) {
+                    let titleRange = titleMatch.range(at: 1)
+                    title = String(itemContent[Range(titleRange, in: itemContent)!])
+                }
+                
+                // Extract link
+                if let linkMatch = linkRegex.firstMatch(in: itemContent, range: NSRange(itemContent.startIndex..., in: itemContent)) {
+                    let linkRange = linkMatch.range(at: 1)
+                    link = String(itemContent[Range(linkRange, in: itemContent)!])
+                }
+                
+                // Extract description
+                if let descMatch = descriptionRegex.firstMatch(in: itemContent, range: NSRange(itemContent.startIndex..., in: itemContent)) {
+                    let descRange = descMatch.range(at: 1)
+                    description = String(itemContent[Range(descRange, in: itemContent)!])
+                        .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                
+                // Create article if we have essential info
+                if !title.isEmpty && !link.isEmpty && !description.isEmpty {
+                    let article = Article(
+                        title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                        url: link.trimmingCharacters(in: .whitespacesAndNewlines),
+                        content: description,
+                        source: .rss,
+                        topic: nil,
+                        imageURL: nil,
+                        publishedDate: Date()
+                    )
+                    articles.append(article)
+                }
+            }
+        } catch {
+            print("⚠️ RSS parsing error: \(error.localizedDescription)")
+        }
+        
+        return articles
+    }
+    
+    /// Insert articles into database
+    private func insertArticles(_ articles: [Article], sourceId: UUID) async throws {
+        // Convert to database format and insert
+        struct ArticleInsert: Codable {
+            let id: String
+            let title: String
+            let url: String
+            let content: String
+            let summary: String
+            let published_date: String
+            let source_type: String
+            let rss_source_id: String
+            let topics: [String]
+            let tags: [String]
+            let difficulty_level: String
+            let estimated_read_time: Int
+            let created_at: String
+        }
+        
+        let articleData = articles.map { article in
+            ArticleInsert(
+                id: article.id.uuidString,
+                title: article.title,
+                url: article.url ?? "",
+                content: article.content,
+                summary: String(article.content.prefix(200)),
+                published_date: ISO8601DateFormatter().string(from: article.publishedDate),
+                source_type: "rss",
+                rss_source_id: sourceId.uuidString,
+                topics: [],
+                tags: [],
+                difficulty_level: "medium",
+                estimated_read_time: max(1, article.content.count / 200),
+                created_at: ISO8601DateFormatter().string(from: Date())
+            )
+        }
+        
+        try await supabaseClient
+            .from("articles")
+            .upsert(articleData, onConflict: "url")
+            .execute()
     }
 }
 
@@ -841,9 +1174,4 @@ struct UserArticleRef: Codable {
 
 // MARK: - Extensions
 
-extension Date {
-    func toISOString() -> String {
-        let formatter = ISO8601DateFormatter()
-        return formatter.string(from: self)
-    }
-}
+// Date extension moved to SupabaseService.swift to avoid duplication

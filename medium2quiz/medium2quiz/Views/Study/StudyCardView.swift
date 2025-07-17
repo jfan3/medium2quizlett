@@ -33,7 +33,7 @@ struct StudyCardView: View {
                                 .foregroundColor(.white)
                                 .multilineTextAlignment(.center)
                             
-                            if card.type == .multipleChoice, let choices = card.choices {
+                            if card.type == "multiple_choice", let choices = card.choices {
                                 VStack(spacing: 8) {
                                     ForEach(Array(choices.enumerated()), id: \.offset) { index, choice in
                                         HStack {
@@ -47,6 +47,7 @@ struct StudyCardView: View {
                                 }
                             }
                         }
+                        .scaleEffect(x: -1, y: 1)
                     } else {
                         VStack(spacing: 16) {
                             Text(card.question)

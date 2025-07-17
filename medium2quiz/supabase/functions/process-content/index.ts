@@ -22,70 +22,35 @@ serve(async (req) => {
       }
     )
 
-    const { sourceId, sourceType, content } = await req.json()
+    const { sourceId, sourceType, content, userId } = await req.json()
 
-    // Update processing status
-    await supabaseClient
-      .from('user_sources')
-      .update({ processing_status: 'processing' })
-      .eq('id', sourceId)
-
-    let processedContent = ''
-    let title = ''
-    let summary = ''
-
-    // Process different content types
-    switch (sourceType) {
-      case 'url':
-        const urlResult = await processURL(content)
-        processedContent = urlResult.content
-        title = urlResult.title
-        summary = urlResult.summary
-        break
-      case 'pdf':
-        processedContent = await processPDF(content)
-        title = 'PDF Document'
-        break
-      case 'text':
-        processedContent = content
-        title = 'Custom Text'
-        break
-      case 'chatgpt':
-        processedContent = content
-        title = 'ChatGPT Response'
-        break
-    }
-
-    // Generate article record
+    // The article should already exist - fetch it instead of creating a new one
     const { data: article, error: articleError } = await supabaseClient
       .from('articles')
-      .insert({
-        title,
-        content: processedContent,
-        summary,
-        source_type: sourceType,
-        topics: await extractTopics(processedContent),
-        difficulty_level: await assessDifficulty(processedContent),
-        estimated_read_time: Math.ceil(processedContent.split(' ').length / 200)
-      })
-      .select()
+      .select('*')
+      .eq('id', sourceId)
       .single()
 
-    if (articleError) throw articleError
+    if (articleError) {
+      throw new Error(`Article not found: ${articleError.message}`)
+    }
 
-    // Generate quiz cards using OpenAI
-    const quizCards = await generateQuizCards(processedContent, article.id)
+    // Use the article's actual content for flashcard generation
+    const contentForCards = article.content || content
+
+    // Generate quiz cards using Claude
+    const quizCards = await generateQuizCards(contentForCards, article.id, userId)
 
     // Insert quiz cards
     const { error: quizError } = await supabaseClient
-      .from('quiz_cards')
+      .from('flashcards')
       .insert(quizCards)
 
     if (quizError) throw quizError
 
-    // Update processing status to completed
+    // Update article processing status to completed
     await supabaseClient
-      .from('user_sources')
+      .from('articles')
       .update({ processing_status: 'completed' })
       .eq('id', sourceId)
 
@@ -145,29 +110,30 @@ async function processPDF(pdfUrl: string) {
 }
 
 async function extractTopics(content: string): Promise<string[]> {
-  const openAIKey = Deno.env.get('OPENAI_API_KEY')
-  if (!openAIKey) return []
+  const claudeKey = Deno.env.get('CLAUDE_API_KEY')
+  if (!claudeKey) return []
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIKey}`,
-        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 100,
+        temperature: 0.3,
         messages: [{
           role: 'user',
           content: `Extract 3-5 key technical topics from this content. Return only a JSON array of topic names: ${content.substring(0, 1000)}`
-        }],
-        max_tokens: 100,
-        temperature: 0.3,
+        }]
       }),
     })
 
     const data = await response.json()
-    const topicsStr = data.choices[0]?.message?.content || '[]'
+    const topicsStr = data.content[0]?.text || '[]'
     return JSON.parse(topicsStr)
   } catch (error) {
     console.error('Topic extraction failed:', error)
@@ -176,29 +142,30 @@ async function extractTopics(content: string): Promise<string[]> {
 }
 
 async function assessDifficulty(content: string): Promise<string> {
-  const openAIKey = Deno.env.get('OPENAI_API_KEY') 
-  if (!openAIKey) return 'medium'
+  const claudeKey = Deno.env.get('CLAUDE_API_KEY') 
+  if (!claudeKey) return 'medium'
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIKey}`,
-        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 10,
+        temperature: 0,
         messages: [{
           role: 'user',
           content: `Assess the technical difficulty of this content. Return only one word: "beginner", "intermediate", or "advanced": ${content.substring(0, 500)}`
-        }],
-        max_tokens: 10,
-        temperature: 0,
+        }]
       }),
     })
 
     const data = await response.json()
-    const difficulty = data.choices[0]?.message?.content?.toLowerCase()?.trim() || 'medium'
+    const difficulty = data.content[0]?.text?.toLowerCase()?.trim() || 'medium'
     return ['beginner', 'intermediate', 'advanced'].includes(difficulty) ? difficulty : 'medium'
   } catch (error) {
     console.error('Difficulty assessment failed:', error)
@@ -206,11 +173,12 @@ async function assessDifficulty(content: string): Promise<string> {
   }
 }
 
-async function generateQuizCards(content: string, articleId: string) {
-  const openAIKey = Deno.env.get('OPENAI_API_KEY')
-  if (!openAIKey) {
-    // Return sample quiz cards if no OpenAI key
+async function generateQuizCards(content: string, articleId: string, userId?: string) {
+  const claudeKey = Deno.env.get('CLAUDE_API_KEY')
+  if (!claudeKey) {
+    // Return sample quiz cards if no Claude key
     return [{
+      user_id: userId || '00000000-0000-0000-0000-000000000001',
       article_id: articleId,
       question: "What is the main topic of this article?",
       answer: "Technical content",
@@ -221,31 +189,73 @@ async function generateQuizCards(content: string, articleId: string) {
   }
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIKey}`,
-        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [{
-          role: 'system',
-          content: 'You are an expert at creating educational quiz cards from technical content. Generate 5-15 diverse quiz cards that test understanding of key concepts, definitions, processes, and applications.'
-        }, {
-          role: 'user',
-          content: `Create quiz cards from this content. Return a JSON array where each card has: question, answer, card_type ("flashcard" or "multiple_choice"), choices (array of 4 options for multiple choice, null for flashcard), difficulty ("easy", "medium", "hard"), source_paragraph (relevant excerpt). Content: ${content.substring(0, 3000)}`
-        }],
+        model: 'claude-3-haiku-20240307',
         max_tokens: 2000,
         temperature: 0.7,
+        messages: [{
+          role: 'user',
+          content: `You are an expert educator creating high-quality study cards from technical content. 
+
+Create 8-12 diverse, engaging quiz cards that test deep understanding. Each card should:
+- Ask specific, meaningful questions about key concepts, methods, applications, or implications
+- Provide detailed, educational answers that teach the concept clearly
+- Focus on "why" and "how" questions, not just "what"
+- Include practical applications when relevant
+
+Return ONLY a valid JSON array. Each card must have:
+- question: Specific, thought-provoking question
+- answer: Comprehensive answer (2-4 sentences) that teaches the concept
+- card_type: "flashcard" 
+- difficulty: "easy", "medium", or "hard"
+- source_paragraph: Brief relevant excerpt from content
+
+Content to process: ${content.substring(0, 4000)}
+
+Example format:
+[{"question": "How does the Transformer architecture achieve parallelization compared to RNNs?", "answer": "The Transformer uses self-attention mechanisms that allow all positions to be processed simultaneously, unlike RNNs which must process sequences step-by-step. This parallelization significantly reduces training time and enables better utilization of modern GPU architectures.", "card_type": "flashcard", "difficulty": "medium", "source_paragraph": "The Transformer allows for significantly more parallelization..."}]`
+        }]
       }),
     })
 
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Claude API error:', response.status, errorText)
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`)
+    }
+
     const data = await response.json()
-    const cardsStr = data.choices[0]?.message?.content || '[]'
+    let cardsStr = data.content[0]?.text || '[]'
+    
+    // Clean up the response text to handle multiple JSON objects or extra text
+    try {
+      // Remove any markdown formatting
+      cardsStr = cardsStr.replace(/```json\n?/g, '').replace(/```\n?/g, '')
+      
+      // Find the first valid JSON array by looking for [ and the last ]
+      const firstBracket = cardsStr.indexOf('[')
+      const lastBracket = cardsStr.lastIndexOf(']')
+      
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        cardsStr = cardsStr.substring(firstBracket, lastBracket + 1)
+      }
+      
+      cardsStr = cardsStr.trim()
+    } catch (cleanupError) {
+      console.error('Error cleaning response:', cleanupError)
+    }
+    
     const cards = JSON.parse(cardsStr)
 
     return cards.map((card: any, index: number) => ({
+      user_id: userId || '00000000-0000-0000-0000-000000000001',
       article_id: articleId,
       question: card.question,
       answer: card.answer,
@@ -257,14 +267,41 @@ async function generateQuizCards(content: string, articleId: string) {
     }))
   } catch (error) {
     console.error('Quiz card generation failed:', error)
-    // Return fallback quiz card
-    return [{
+    
+    // Generate better fallback quiz cards based on content analysis
+    const words = content.split(/\s+/)
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20)
+    
+    const fallbackCards = []
+    
+    // Extract key topics from the beginning of the content
+    const firstParagraph = sentences.slice(0, 3).join('. ')
+    const title = content.split('\n').find(line => line.trim().length > 10 && line.trim().length < 100) || 'This Content'
+    
+    fallbackCards.push({
+      user_id: userId || '00000000-0000-0000-0000-000000000001',
       article_id: articleId,
-      question: "What is the main concept discussed in this content?",
-      answer: "Please review the article content",
+      question: `What is the main topic discussed in "${title}"?`,
+      answer: firstParagraph.substring(0, 200) + (firstParagraph.length > 200 ? '...' : ''),
       card_type: "flashcard",
-      difficulty: "medium",
+      difficulty: "easy",
       card_order: 1
-    }]
+    })
+    
+    // If content is long enough, create more cards
+    if (sentences.length > 5) {
+      const midContent = sentences.slice(3, 6).join('. ')
+      fallbackCards.push({
+        user_id: userId || '00000000-0000-0000-0000-000000000001',
+        article_id: articleId,
+        question: "What are the key concepts or methods described?",
+        answer: midContent.substring(0, 200) + (midContent.length > 200 ? '...' : ''),
+        card_type: "flashcard", 
+        difficulty: "medium",
+        card_order: 2
+      })
+    }
+    
+    return fallbackCards
   }
 }
