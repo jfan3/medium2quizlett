@@ -82,6 +82,8 @@ def test_document_classifier():
             print(f"   Textbook keywords: {features['textbook_keywords']}")
             print(f"   Technical keywords: {features['technical_keywords']}")
             print(f"   Blog/Tutorial keywords: {features['blog_tutorial_keywords']}")
+            print(f"   Tech Blog keywords: {features['tech_blog_keywords']}")
+            print(f"   AI Generated keywords: {features['ai_generated_keywords']}")
             print(f"   Citations: {features['citation_count']}")
             print(f"   Avg sentence length: {features['average_sentence_length']:.1f}")
             

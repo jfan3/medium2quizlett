@@ -7,6 +7,8 @@ class DocumentType(str, Enum):
     TEXTBOOK = "textbook"
     PAPER = "paper"
     SHORT_TEXT = "short_text"
+    TECH_BLOG = "tech_blog"
+    AI_GENERATED_REPORT = "ai_generated_report"
     UNKNOWN = "unknown"
 
 class ProcessingStatus(str, Enum):
